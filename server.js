@@ -87,12 +87,12 @@ router.post('/signin', function (req, res) {
     })
 })
 
-router.route('/movies')
-.all(passport.authenticate('jwt',{session: false}))
+// router.route('/movies')
+// .all(passport.authenticate('jwt',{session: false}))
 
 .get("/movies/:title?", authJwtController.isAuthenticated, (req,res ) => {
     Movie.find({}, (err, movies) => {
-        res.res.status(200);
+        res = res.status(200);
         var o = getJSONObjectForMovieRequirement(req);
         if (req.get('Content-Type')) {
             res = res.type(req.get('Content-Type'));
