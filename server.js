@@ -4,6 +4,7 @@ File: Server.js
 Description: Web API scaffolding for Movie API
  */
 //trial
+require('dotenv').config();
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
@@ -61,7 +62,7 @@ router.post('/signup', function(req, res) {
             res.json({success: true, msg: 'Successfully created new user.'})
         });
     }
-});
+})
 
 router.post('/signin', function (req, res) {
     var userNew = new User();
@@ -84,10 +85,127 @@ router.post('/signin', function (req, res) {
             }
         })
     })
-});
+})
+
+router.route('/movies')
+.all(passport.authenticate('jwt',{session: false}))
+
+.get("/movies/:title?", authJwtController.isAuthenticated, (req,res ) => {
+    Movie.find({}, (err, movies) => {
+        res.res.status(200);
+        var o = getJSONObjectForMovieRequirement(req);
+        if (req.get('Content-Type')) {
+            res = res.type(req.get('Content-Type'));
+        }
+        console.log(req.params);
+        if (req.params.title) {
+            Movie.find({title: req.params.title}, function(err, movies) {
+                if (err) {
+                    return res.send(err);
+                }
+                res.send(movies);
+            });
+        } else {
+            Movie.find({}, function(err, movies) {
+                if (err) {
+                    return res.send(err);
+                }
+                res.send(movies);
+            });
+        }
+    })
+})
+
+    .post("/movies/:title?", authJwtController.isAuthenticated, (req, res) => {
+        res = res.status(200);
+        var o = getJSONObjectForMovieRequirement(req);
+        if (req.get('Content-Type')) {
+            res = res.type(req.get('Content-Type'));
+        }
+        console.log(req.params);
+        if (req.params.title) {
+            o.body = {success: false, msg: 'title query parameter invalid for POST'};
+        } else {
+            if (!req.body.title || !req.body.releaseDate || !req.body.genre || req.body.actors.length < 3) {
+                o.body = {success: false, msg: 'not enough info to save.'};
+            } else {
+                var newMovie = new Movie();
+                newMovie.title = req.body.title;
+                newMovie.releaseDate = new Date(req.body.releaseDate);
+                newMovie.genre = req.body.genre;
+                newMovie.actors = req.body.actors;
+    
+                newMovie.save(function (err) {
+                    if (err) {
+                        o.body = err;
+                    } else {
+                        o.body = {success: true, msg: 'saved movie successfully.'};
+                    }
+    
+                });
+            }
+        }
+        res.json(o);
+    })
+
+    .put("/movies/:title?", authJwtController.isAuthenticated, (req, res) => {
+        res = res.status(200);
+        var o = getJSONObjectForMovieRequirement(req);
+        if (req.get('Content-Type')) {
+            res = res.type(req.get('Content-Type'));
+        }
+        console.log(req.params);
+        if (req.params.title) {
+            Movie.findOne({ title: req.body.title }, function(err, movie) {
+                if (err || !movie) {
+                    o.body = {success: false, msg: 'Movie not found'};
+                } else {
+                    movie.title = req.body.title;
+                    movie.releaseDate = new Date(req.body.releaseDate);
+                    movie.genre = req.body.genre;
+                    movie.actors = req.body.actors;
+    
+                    movie.save(function(err){
+                        if (err) {
+                            o.body = err;
+                        } else {
+                            o.body = {success: true, msg: 'updated movie successfully.'};
+                        }
+    
+                    });
+                }
+            });
+        } else {
+            o.body = {success: false, msg: 'for PUT, title query parameter required'};
+        }
+    
+        res.json(o);
+    })
+    
+    .delete("/movies/:title?", authJwtController.isAuthenticated, async (req, res) => {
+        console.log(req.body);
+        res = res.status(200);
+        var o = getJSONObjectForMovieRequirement(req);
+        if (req.get('Content-Type')) {
+            res = res.type(req.get('Content-Type'))
+        }
+        if (!req.params.title) {
+            o.body = {success: false, msg: 'for DELETE, title parameter required'}
+        } else {
+            var record = await Movie.deleteOne({title: req.params.title});
+            console.log(record);
+            if (record.deletedCount) {
+                o.body = {success: true, msg: 'movie deleted.'}
+            } else {
+                o.body = {success: false, msg: 'couldnt find movie.'}
+            }
+        }
+    
+        res.json(o);
+    })
+
+
 
 app.use('/', router);
-app.listen(process.env.PORT || 10000);
+app.listen(process.env.PORT || 8080);
 module.exports = app; // for testing only
-
-
