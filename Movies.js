@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
-mongoose.connect("mongodb+srv://ryanduncan02:G5b6t56hD4bUri67@cluster0.cdwdktp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
+mongoose.connect("mongodb+srv://ryanduncan02:G5b6t56hD4bUri67@cluster0.cdwdktp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", { useNewUrlParser: true });
 
 // Movie schema
 var MovieSchema = new Schema({
