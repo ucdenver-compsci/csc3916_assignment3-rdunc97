@@ -3,7 +3,6 @@ CSC3916 HW2
 File: Server.js
 Description: Web API scaffolding for Movie API
  */
-//trial
 require('dotenv').config();
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -44,7 +43,7 @@ function getJSONObjectForMovieRequirement(req) {
 
 router.post('/signup', function(req, res) {
     if (!req.body.username || !req.body.password) {
-        res.json({success: false, msg: 'Please include both username and password to signup.'})
+        res.json({success: false, msg: 'need user and password to signup.'})
     } else {
         var user = new User();
         user.name = req.body.name;
@@ -54,15 +53,15 @@ router.post('/signup', function(req, res) {
         user.save(function(err){
             if (err) {
                 if (err.code == 11000)
-                    return res.json({ success: false, message: 'A user with that username already exists.'});
+                    return res.json({ success: false, message: 'username already exists.'});
                 else
                     return res.json(err);
             }
 
-            res.json({success: true, msg: 'Successfully created new user.'})
+            res.json({success: true, msg: 'created new user successfully.'})
         });
     }
-})
+});
 
 router.post('/signin', function (req, res) {
     var userNew = new User();
@@ -85,126 +84,66 @@ router.post('/signin', function (req, res) {
             }
         })
     })
-})
+});
 
-// router.route('/movies')
-// .all(passport.authenticate('jwt',{session: false}))
+router.post('/movies', authJwtController.isAuthenticated, function(req, res){
+    if (!req.body.title || !req.body.releaseDate || !req.body.genre || !req.body.actors) {
+        res.status(400).json({
+            success: false,
+            msg: "provide title, name, genre and 3 actors."
+        });
+    }
+        else{
+            var movie = new Movie();
+            movie.title = req.body.title;
+            movie.releaseDate = req.body.releaseDate;
+            movie.genre = req.body.genre;
+            movie.actors = req.body.actors;
 
-.get("/movies/:title?", authJwtController.isAuthenticated, (req,res ) => {
-    Movie.find({}, (err, movies) => {
-        res = res.status(200);
-        var o = getJSONObjectForMovieRequirement(req);
-        if (req.get('Content-Type')) {
-            res = res.type(req.get('Content-Type'));
-        }
-        console.log(req.params);
-        if (req.params.title) {
-            Movie.find({title: req.params.title}, function(err, movies) {
-                if (err) {
-                    return res.send(err);
+            movie.save(function(err){
+                if (err){
+                    res.status(401).json({success: false, msg: "couldn't save movie."});
                 }
-                res.send(movies);
-            });
-        } else {
-            Movie.find({}, function(err, movies) {
-                if (err) {
-                    return res.send(err);
-                }
-                res.send(movies);
-            });
-        }
-    })
-})
-
-    .post("/movies/:title?", authJwtController.isAuthenticated, (req, res) => {
-        res = res.status(200);
-        var o = getJSONObjectForMovieRequirement(req);
-        if (req.get('Content-Type')) {
-            res = res.type(req.get('Content-Type'));
-        }
-        console.log(req.params);
-        if (req.params.title) {
-            o.body = {success: false, msg: 'title query parameter invalid for POST'};
-        } else {
-            if (!req.body.title || !req.body.releaseDate || !req.body.genre || req.body.actors.length < 3) {
-                o.body = {success: false, msg: 'not enough info to save.'};
-            } else {
-                var newMovie = new Movie();
-                newMovie.title = req.body.title;
-                newMovie.releaseDate = new Date(req.body.releaseDate);
-                newMovie.genre = req.body.genre;
-                newMovie.actors = req.body.actors;
-    
-                newMovie.save(function (err) {
-                    if (err) {
-                        o.body = err;
-                    } else {
-                        o.body = {success: true, msg: 'saved movie successfully.'};
-                    }
-    
-                });
-            }
-        }
-        res.json(o);
-    })
-
-    .put("/movies/:title?", authJwtController.isAuthenticated, (req, res) => {
-        res = res.status(200);
-        var o = getJSONObjectForMovieRequirement(req);
-        if (req.get('Content-Type')) {
-            res = res.type(req.get('Content-Type'));
-        }
-        console.log(req.params);
-        if (req.params.title) {
-            Movie.findOne({ title: req.body.title }, function(err, movie) {
-                if (err || !movie) {
-                    o.body = {success: false, msg: 'Movie not found'};
-                } else {
-                    movie.title = req.body.title;
-                    movie.releaseDate = new Date(req.body.releaseDate);
-                    movie.genre = req.body.genre;
-                    movie.actors = req.body.actors;
-    
-                    movie.save(function(err){
-                        if (err) {
-                            o.body = err;
-                        } else {
-                            o.body = {success: true, msg: 'updated movie successfully.'};
-                        }
-    
-                    });
+                else{
+                    res.json({success: true, msg: "Movie saved successfully."});
                 }
             });
-        } else {
-            o.body = {success: false, msg: 'for PUT, title query parameter required'};
         }
-    
-        res.json(o);
-    })
-    
-    .delete("/movies/:title?", authJwtController.isAuthenticated, async (req, res) => {
-        console.log(req.body);
-        res = res.status(200);
-        var o = getJSONObjectForMovieRequirement(req);
-        if (req.get('Content-Type')) {
-            res = res.type(req.get('Content-Type'))
-        }
-        if (!req.params.title) {
-            o.body = {success: false, msg: 'for DELETE, title parameter required'}
-        } else {
-            var record = await Movie.deleteOne({title: req.params.title});
-            console.log(record);
-            if (record.deletedCount) {
-                o.body = {success: true, msg: 'movie deleted.'}
-            } else {
-                o.body = {success: false, msg: 'couldnt find movie.'}
-            }
-        }
-    
-        res.json(o);
-    })
+});
 
+router.get('/movies', authJwtController.isAuthenticated, function(req,res){
+    Movie.find({}, function(err, movies){
+        if (err) {
+            return res.status(500).send(err);
+        }else{
+        res.json(movies);
+        }
+    });
+});
 
+router.get('/movies/:movieParameter',authJwtController.isAuthenticated, function(req, res){
+    Movie.findOne({title: req.params.movieParameter}, function(err, movie){
+        if (err) res.status(500).send(err);
+        else if (!movie) res.status(404).json({msg:"Movie not found."});
+        else res.json(movie);
+    });
+});
+
+router.put('/movies/:movieParameter', authJwtController.isAuthenticated, function(req, res){
+    Movie.findOneAndUpdate({title: req.params.movieParameter}, req.body,{new: true},function(err, movie){
+        if(err) res.status(500).send(err);
+        else if (!movie) res.status(404).json({msg: "Movie not found."});
+        else res.json(movie);
+    });
+});
+
+router.delete('/movies/:movieParameter', authJwtController.isAuthenticated, function(req, res){
+    Movie.findOneAndDelete({title: req.params.movieParameter}, function(err, movie){
+        if(err) res.status(500).send(err);
+        else if (!movie) res.status(500).json({msg: "Movie not found."});
+        else res.json({message: 'Movie successfully deleted.'});
+    });
+});
 
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
