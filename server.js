@@ -63,6 +63,7 @@ router.post('/signup', function(req, res) {
     }
 });
 
+
 router.post('/signin', function (req, res) {
     var userNew = new User();
     userNew.username = req.body.username;
@@ -85,6 +86,8 @@ router.post('/signin', function (req, res) {
         })
     })
 });
+
+
 
 router.post('/movies', authJwtController.isAuthenticated, function(req, res){
     if (!req.body.title || !req.body.releaseDate || !req.body.genre || !req.body.actors) {
@@ -111,6 +114,8 @@ router.post('/movies', authJwtController.isAuthenticated, function(req, res){
         }
 });
 
+
+
 router.get('/movies', authJwtController.isAuthenticated, function(req,res){
     Movie.find({}, function(err, movies){
         if (err) {
@@ -129,6 +134,8 @@ router.get('/movies/:movieParameter',authJwtController.isAuthenticated, function
     });
 });
 
+
+
 router.put('/movies/:movieParameter', authJwtController.isAuthenticated, function(req, res){
     Movie.findOneAndUpdate({title: req.params.movieParameter}, req.body,{new: true},function(err, movie){
         if(err) res.status(500).send(err);
@@ -136,6 +143,8 @@ router.put('/movies/:movieParameter', authJwtController.isAuthenticated, functio
         else res.json(movie);
     });
 });
+
+
 
 router.delete('/movies/:movieParameter', authJwtController.isAuthenticated, function(req, res){
     Movie.findOneAndDelete({title: req.params.movieParameter}, function(err, movie){
